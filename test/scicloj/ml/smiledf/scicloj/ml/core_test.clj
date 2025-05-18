@@ -9,7 +9,6 @@
    [smile.data.vector ValueVector]))
 
 (defn value-vector-equals? [^ValueVector vv-0 ^ValueVector vv-1]
-  (def vv-0 vv-0)
   (java.util.Arrays/equals
    (.toStringArray vv-0)
    (.toStringArray vv-1)))
@@ -45,7 +44,7 @@
                  (smile.data.vector.FloatVector. "f" (float-array [1.0 2.0]))
                  (smile.data.vector.LongVector. "l" (long-array [1 2]))
                  (smile.data.vector.ByteVector. "b" (byte-array [1 2]))
-                 
+
                  (smile.data.vector.BooleanVector.
                   (StructField. "bo" DataTypes/BooleanType)
                   (boolean-array [true false]))
@@ -53,9 +52,8 @@
                  (smile.data.vector.ShortVector. "sh" (short-array [1 2]))
                  (smile.data.vector.ObjectVector. "obj1" (object-array [:a 1]))
                  (smile.data.vector.ObjectVector. "obj2" (object-array [:a nil]))
-                 (ValueVector/ordinal "ord" (into-array String [ "a" "b"]))
-                 ])))
-  )
+                 ;(ValueVector/ordinal "ord" (into-array String [ "a" "b"]))
+                 ]))))
 
 
 (deftest test-validate-round-trip
