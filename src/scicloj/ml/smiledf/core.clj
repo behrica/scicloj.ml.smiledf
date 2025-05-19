@@ -1,9 +1,11 @@
 (ns scicloj.ml.smiledf.core
   (:require
    [tech.v3.dataset :as ds]
-   [tech.v3.dataset.column :as col])
+   [tech.v3.dataset.column :as col]
+   [tech.v3.datatype :as dt])
 
   (:import
+   [java.util Arrays]
    [smile.data.type StructField DataTypes]
    [smile.data DataFrame]
    [smile.data.vector ValueVector IntVector NullableIntVector NullableBooleanVector
@@ -107,8 +109,6 @@
            (array-fn (replace-nil col replacement))
            null-mask))))))
 
-
-
 (defn ds->df [ds]
   (DataFrame.
    (into-array ValueVector
@@ -118,36 +118,85 @@
                 (ds/columns ds)))))
 
 
+(defn filter-by-index [coll idxs]
+  (keep-indexed #(when ((set idxs) %1) %2)
+                coll))
 
 
+(defn- typed-double-stream [col]
+  (->
+   (java.util.stream.DoubleStream/of (dt/->double-array col))
+   (.mapToObj
+    (reify
+      java.util.function.DoubleFunction
+      (apply [this i]
+        i)))))
+
+(defn- typed-int-stream [col]
+  (->
+   (java.util.stream.IntStream/of (dt/->int-array col))
+   (.mapToObj
+    (reify
+      java.util.function.IntFunction
+      (apply [this i]
+        i)))))
+
+(defn- col->stream [col]
+  ;(def col (col/new-column "a" [1.0 2.0]))
+  (->
+   (java.util.stream.Stream/of (object-array (dt/->array col)))
+   ;;  (.map
+   ;;   (reify
+   ;;     java.util.function.Function
+   ;;     (apply [this i]
+   ;;       ;(def i i)
+   ;;       i)))
+   ))
+
+(defn col-as-value-vector [col]
+
+  (reify ValueVector
+    (get [this ^int i]
+      ;(println :get :i i)
+      (get col i))
+    (field [this] (StructField. (name (-> col meta :name))
+                                (case (-> col meta :datatype)
+
+                                  :int64  DataTypes/LongType
+                                  :float64 DataTypes/DoubleType
+                                  :int32 DataTypes/IntType
+                                  :float32 DataTypes/FloatType
+                                  :int16 DataTypes/ShortType
+                                  :boolean DataTypes/BooleanType
+                                  :char DataTypes/CharType
+
+                                  DataTypes/ObjectType)))
+    (size [this] (count col))
+    (getFloat [this i] (get col i))
+    (getDouble [this i] (get col i))
+    (getChar [this i] (get col i))
+    (getByte [this i] (get col i))
+    (stream [this] (col->stream col))
+    (intStream [this] (do
+                        (java.util.stream.IntStream/of (dt/->int-array col))))
+    (isNullable [this] (not (empty? (col/missing col))))
+    (isNullAt [this i] (col/is-missing? col i))
+    (getNullCount [this] (count (vec (col/missing col))))
+    (^ValueVector get  [this ^smile.util.Index index]
+      (col-as-value-vector
+       (col/select col (-> index .stream stream-seq!))))
+    ( set [this i value] (dt/set-value! col i value))
+    
+    ))
 
 
-(comment
-  (require '[smile.datasets CPU])
-  (def iris
-    (scicloj.metamorph.ml.toydata/iris-ds))
+(defn ds-as-df [dataset]
+  (def dataset dataset)
+  (DataFrame.
+   (into-array ValueVector
+               (mapv
+                col-as-value-vector
+                (ds/columns dataset)))))
 
-
-
-  (def cpu
-    (.data (CPU.
-            (.toPath
-             (io/file "cpu.arff")))))
-
-
-  (def cpu-with-null
-    (.data (CPU.
-            (.toPath
-             (io/file "cpu_with_null.arff")))))
-
-
-  (-> iris
-      ds->df
-      df->ds)
-
-
-  (df->ds cpu)
-
-  (df->ds cpu-with-null))
 
 

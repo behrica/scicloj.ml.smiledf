@@ -2,8 +2,11 @@
   (:require
    [clojure.test :refer [deftest is]]
    [scicloj.metamorph.ml.toydata :as data]
+   [scicloj.metamorph.ml.rdatasets :as rdata]
    [scicloj.ml.smiledf.core :as dataframe]
-   [tech.v3.dataset :as ds])
+   [tech.v3.dataset :as ds]
+   [tech.v3.dataset.column :as col]
+   [tech.v3.datatype :as dt])
   (:import
    [smile.data.type StructField DataTypes]
    [smile.data.vector ValueVector]))
@@ -143,6 +146,94 @@
     .isShort)))
 
 
+(deftest numeric-df
+  (let [df
+        (smile.data.DataFrame.
+         (into-array ValueVector [(dataframe/col-as-value-vector (col/new-column "long" [1 2 3]))
+                                  (dataframe/col-as-value-vector (col/new-column "int" (int-array [1 2 3])))
+                                  (dataframe/col-as-value-vector (col/new-column "double" [10.1 20.8 30.4]))
+                                  (dataframe/col-as-value-vector (col/new-column "float" (float-array [1.0 2.0 3.0])))
+                                  (dataframe/col-as-value-vector (col/new-column "short" (short-array [1 2 3])))]))]
+    (def df df)
+    (is (= ["long" "int" "double" "float" "short"] (vec (.names df))))
+    (is (= 1.0 (.getFloat df 0 0)))
+    (is (= (float 10.1) (.getFloat df 0 2)))
+    (is (= "1" (.getString df 0 0)))
+    (is (= smile.data.DataFrame (class (.describe df))))
+    (is (=  85.30000000000001 (.sum (.toMatrix df))))
+
+    (is (false? (.. df (column "double") isNullable)))
+    (is (false? (.. df (column "double") (isNullAt 0))))
+    (is (= 0 (.. df (column "double") (getNullCount))))
+    (is (= ["10.1" "20.8"] (vec (.. df (column "double") (get (int-array [0 1])) toStringArray))))
+    (is (= [1 2 3] (iterator-seq (.. df (column "int") stream iterator))))
+    (is (= [1 2 3] (iterator-seq (.. df (column "int") intStream iterator))))
+    (is (= [1.0 2.0 3.0] (iterator-seq (.. df (column "int") doubleStream iterator))))
+
+    (is (= [10.1 20.8 30.4] (iterator-seq (.. df (column "double") stream iterator))))
+    (is (= [10 20 30] (iterator-seq (.. df (column "double") intStream iterator))))
+    (is (= [1 2 3] (iterator-seq (.. df (column "short") stream iterator))))
+
+
+    (is (= [1 2 3] (iterator-seq (.. df (column "long") stream iterator))))))
+
+
+(deftest string-df
+  (let [df
+        (smile.data.DataFrame.
+         (into-array ValueVector [(dataframe/col-as-value-vector (col/new-column "boolean" (boolean-array [true false true])))
+                                  (dataframe/col-as-value-vector (col/new-column "char" [\1 \2 \3]))
+                                  (dataframe/col-as-value-vector (col/new-column "byte" [1 2 3]))
+                                  (dataframe/col-as-value-vector (col/new-column "string" ["x" "y" "z"]))
+                                  (dataframe/col-as-value-vector (col/new-column "mixed" ["x" 1 true]))]))]
+
+    (is (= "true" (.getString df 0 0)))
+    (is (= "1" (.getString df 0 1)))
+    (is (= \1 (.. df (column "char") (getChar 0))))
+    (is (= 1 (.. df (column "byte") (getByte 0))))
+    (is (= [true false true] (iterator-seq (.. df (column "boolean") stream iterator))))
+    (is (= ["x" "y" "z"] (iterator-seq (.. df (column "string") stream iterator))))
+    (is (= ["x" 1 true] (iterator-seq (.. df (column "mixed") stream iterator))))))
+
+
+(deftest df-with-nulls
+  (let [df
+        (smile.data.DataFrame.
+         (into-array ValueVector [(dataframe/col-as-value-vector (col/new-column
+                                                                  "boolean"
+                                                                  (boolean-array [true false true])
+                                                                  {}
+                                                                  #{0}))]))]
+
+    (is (true? (.. df (column "boolean") isNullable)))
+    (is (nil? (.. df (column "boolean") (get 0))))
+    (is (= 1 (.. df (column "boolean") getNullCount)))
+    (is (= true (.. df (column "boolean") anyNull)))
+    (is (= true (.. df (column "boolean") (isNullAt 0))))
+    (is (= [false false true] (stream-seq! (.. df (column "boolean") stream))))))
+
+(deftest set-value
+  (let [col (dataframe/col-as-value-vector (col/new-column [1 2 3]))]
+    (-> col (.update 0 5))
+    (is (= [5 2 3] (stream-seq! (.. col intStream))))))
+
+
+
+(comment
+  (->>
+   (reduce
+    dissoc
+    (ns-publics (find-ns 'scicloj.metamorph.ml.rdatasets))
+    ['fetch-dataset 'DAAG-bomregions2021 '_fetch-dataset 'doc-url->md])
+
+
+   vals
+   (mapv #(do
+            (println %)
+            (println (-> % list eval dataframe/ds-as-df .names vec))))))
+
+
+
 (comment
 
 
@@ -171,3 +262,4 @@
 
   (smile.data.vector.ValueVector/nominal "test"
                                          (into-array String ["a" "b" "c"])))
+
