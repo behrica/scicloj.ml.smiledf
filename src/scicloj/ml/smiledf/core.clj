@@ -41,11 +41,6 @@
                      (if (.isNullable vv-column)
                        (stream-seq! (.stream (.getNullMask vv-column)))
                        nil)))))
-(defn df->ds [df]
-  (ds/new-dataset
-   (map
-    value-vector->column
-    (.columns df))))
 
 
 (defn- replace-nil [col replacement]
@@ -109,13 +104,6 @@
            (array-fn (replace-nil col replacement))
            null-mask))))))
 
-(defn ds->df [ds]
-  (DataFrame.
-   (into-array ValueVector
-               (map
-                (fn [col]
-                  (col->value-vector col))
-                (ds/columns ds)))))
 
 
 (defn filter-by-index [coll idxs]
@@ -153,6 +141,7 @@
    ;;       i)))
    ))
 
+
 (defn col-as-value-vector [col]
 
   (reify ValueVector
@@ -189,14 +178,33 @@
     
     ))
 
+(defn df-to-ds 
+  "Converts a Smile DataFrame to a Tech Dataset. "
+  [smile-df]
+  (ds/new-dataset
+   (map
+    value-vector->column
+    (.columns smile-df))))
 
-(defn ds-as-df [dataset]
-  (def dataset dataset)
+
+(defn ds-as-df 
+  "Bridges a Tech Dataset to a Smile DataFrame.
+   No data is copied."
+  [tech-dataset]
   (DataFrame.
    (into-array ValueVector
                (mapv
                 col-as-value-vector
-                (ds/columns dataset)))))
+                (ds/columns tech-dataset)))))
 
 
+(defn ds-to-df 
+  "Converts a Tech Dataset to a Smile DataFrame via copying the data."
+  [tech-dataset]
+  (DataFrame.
+   (into-array ValueVector
+               (map
+                (fn [col]
+                  (col->value-vector col))
+                (ds/columns tech-dataset)))))
 

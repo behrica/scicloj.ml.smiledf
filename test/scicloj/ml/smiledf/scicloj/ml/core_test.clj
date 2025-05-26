@@ -2,16 +2,14 @@
   (:require
    [clojure.test :refer [deftest is]]
    [scicloj.metamorph.ml.toydata :as data]
-   [scicloj.metamorph.ml.rdatasets :as rdata]
-   [scicloj.ml.smiledf.core :as dataframe]
+   [scicloj.ml.smiledf.core :as smiledf]
    [tech.v3.dataset :as ds]
-   [tech.v3.dataset.column :as col]
-   [tech.v3.datatype :as dt])
+   [tech.v3.dataset.column :as col])
   (:import
    [smile.data.type StructField DataTypes]
    [smile.data.vector ValueVector]))
 
-(defn value-vector-equals? [^ValueVector vv-0 ^ValueVector vv-1]
+(defn- value-vector-equals? [^ValueVector vv-0 ^ValueVector vv-1]
   (java.util.Arrays/equals
    (.toStringArray vv-0)
    (.toStringArray vv-1)))
@@ -20,21 +18,24 @@
   (let [round-tripped
 
         (-> ds
-            (dataframe/ds->df)
-            (dataframe/df->ds))]
+            (smiledf/ds-to-df)
+            (smiledf/df-to-ds))]
     (is (= ds round-tripped))))
+
+(defn- assert-dfs-equal [df round-tripped]
+  (assert (every? true?
+                  (map
+                   #(value-vector-equals? %1 %2)
+                   (.columns df)
+                   (.columns round-tripped)))))
 
 (defn- validate-round-trip--inverse [df]
   (let [round-tripped
 
         (-> df
-            (dataframe/df->ds)
-            (dataframe/ds->df))]
-    (assert (every? true?
-                    (map
-                     #(value-vector-equals? %1 %2)
-                     (.columns df)
-                     (.columns round-tripped))))))
+            (smiledf/df-to-ds)
+            (smiledf/ds-to-df))]
+    (assert-dfs-equal df round-tripped)))
 
 
 (deftest roundtrip-inverse
@@ -126,21 +127,21 @@
 (deftest specific-data
   (is
    (->
-    (dataframe/ds->df (ds/->dataset {"k" [\a \b \c]}))
+    (smiledf/ds-to-df (ds/->dataset {"k" [\a \b \c]}))
     .dtypes
     first
     .isChar))
 
   (is
    (->
-    (dataframe/ds->df (ds/->dataset {"k" (byte-array (map byte [0 1 2]))}))
+    (smiledf/ds-to-df (ds/->dataset {"k" (byte-array (map byte [0 1 2]))}))
     .dtypes
     first
     .isByte))
 
   (is
    (->
-    (dataframe/ds->df (ds/->dataset {"k" (short-array (map short [0 1 2]))}))
+    (smiledf/ds-to-df (ds/->dataset {"k" (short-array (map short [0 1 2]))}))
     .dtypes
     first
     .isShort)))
@@ -149,11 +150,11 @@
 (deftest numeric-df
   (let [df
         (smile.data.DataFrame.
-         (into-array ValueVector [(dataframe/col-as-value-vector (col/new-column "long" [1 2 3]))
-                                  (dataframe/col-as-value-vector (col/new-column "int" (int-array [1 2 3])))
-                                  (dataframe/col-as-value-vector (col/new-column "double" [10.1 20.8 30.4]))
-                                  (dataframe/col-as-value-vector (col/new-column "float" (float-array [1.0 2.0 3.0])))
-                                  (dataframe/col-as-value-vector (col/new-column "short" (short-array [1 2 3])))]))]
+         (into-array ValueVector [(smiledf/col-as-value-vector (col/new-column "long" [1 2 3]))
+                                  (smiledf/col-as-value-vector (col/new-column "int" (int-array [1 2 3])))
+                                  (smiledf/col-as-value-vector (col/new-column "double" [10.1 20.8 30.4]))
+                                  (smiledf/col-as-value-vector (col/new-column "float" (float-array [1.0 2.0 3.0])))
+                                  (smiledf/col-as-value-vector (col/new-column "short" (short-array [1 2 3])))]))]
     (def df df)
     (is (= ["long" "int" "double" "float" "short"] (vec (.names df))))
     (is (= 1.0 (.getFloat df 0 0)))
@@ -181,11 +182,11 @@
 (deftest string-df
   (let [df
         (smile.data.DataFrame.
-         (into-array ValueVector [(dataframe/col-as-value-vector (col/new-column "boolean" (boolean-array [true false true])))
-                                  (dataframe/col-as-value-vector (col/new-column "char" [\1 \2 \3]))
-                                  (dataframe/col-as-value-vector (col/new-column "byte" [1 2 3]))
-                                  (dataframe/col-as-value-vector (col/new-column "string" ["x" "y" "z"]))
-                                  (dataframe/col-as-value-vector (col/new-column "mixed" ["x" 1 true]))]))]
+         (into-array ValueVector [(smiledf/col-as-value-vector (col/new-column "boolean" (boolean-array [true false true])))
+                                  (smiledf/col-as-value-vector (col/new-column "char" [\1 \2 \3]))
+                                  (smiledf/col-as-value-vector (col/new-column "byte" [1 2 3]))
+                                  (smiledf/col-as-value-vector (col/new-column "string" ["x" "y" "z"]))
+                                  (smiledf/col-as-value-vector (col/new-column "mixed" ["x" 1 true]))]))]
 
     (is (= "true" (.getString df 0 0)))
     (is (= "1" (.getString df 0 1)))
@@ -199,7 +200,7 @@
 (deftest df-with-nulls
   (let [df
         (smile.data.DataFrame.
-         (into-array ValueVector [(dataframe/col-as-value-vector (col/new-column
+         (into-array ValueVector [(smiledf/col-as-value-vector (col/new-column
                                                                   "boolean"
                                                                   (boolean-array [true false true])
                                                                   {}
@@ -213,9 +214,21 @@
     (is (= [false false true] (stream-seq! (.. df (column "boolean") stream))))))
 
 (deftest set-value
-  (let [col (dataframe/col-as-value-vector (col/new-column [1 2 3]))]
+  (let [col (smiledf/col-as-value-vector (col/new-column [1 2 3]))]
     (-> col (.update 0 5))
     (is (= [5 2 3] (stream-seq! (.. col intStream))))))
+
+
+(defn- assert-as-to-df-equal [df]
+  (assert-dfs-equal
+   (smiledf/ds-as-df  df)
+   (smiledf/ds-to-df  df)))
+
+(comment 
+
+  (assert-as-to-df-equal
+   (scicloj.metamorph.ml.rdatasets/fpp2-a10))
+  )
 
 
 
