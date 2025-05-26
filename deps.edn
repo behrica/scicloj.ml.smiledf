@@ -10,9 +10,10 @@
                 io.github.cognitect-labs/test-runner
                 {:git/tag "v0.5.1" :git/sha "dfb30dd"}
                 org.scicloj/metamorph.ml {:mvn/version "1.2"}
+                io.github.clojure/tools.build {:mvn/version "0.9.6"}
                 }}
-  :build {:deps {io.github.clojure/tools.build
-                 {:git/tag "v0.9.2" :git/sha "fe6b140"}
+  :build {:deps {
+                 io.github.clojure/tools.build {:mvn/version "0.9.6"}
                  slipset/deps-deploy {:mvn/version "0.2.0"}}
           :ns-default build}
   :neil {:project {:name scicloj.ml.smile2/scicloj.ml.smile2}}}}

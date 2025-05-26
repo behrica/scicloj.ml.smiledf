@@ -3,11 +3,25 @@
   (:require [clojure.tools.build.api :as b]
             [deps-deploy.deps-deploy :as dd]))
 
-(def lib 'scicloj.ml/smiledf)
+(def lib 'org.scicloj/scicloj.ml.smiledf	)
 (def version "0.0.1")
 #_ ; alternatively, use MAJOR.MINOR.COMMITS:
 (def version (format "1.0.%s" (b/git-count-revs nil)))
 (def class-dir "target/classes")
+
+(defn- pom-template [version]
+  [[:description "Librray to convert between Smile DataFrame and Tech ML Dataset"]
+   [:url "https://github.com/behrica/scicloj.ml.smiledf"]
+   [:licenses
+    [:license
+     [:name "GPL 3.0"]
+     [:url "https://www.gnu.org/licenses/gpl-3.0.en.html"]]]
+   [:developers
+    [:developer
+     [:name "Carsten Behring"]]]
+   ])
+
+
 
 (defn test "Run all the tests." [opts]
   (let [basis    (b/create-basis {:aliases [:test]})
@@ -20,14 +34,23 @@
   opts)
 
 (defn- jar-opts [opts]
-  (assoc opts
-          :lib lib :version version
-          :jar-file (format "target/%s-%s.jar" lib version)
-          :scm {:tag (str "v" version)}
-          :basis (b/create-basis {})
-          :class-dir class-dir
-          :target "target"
-          :src-dirs ["src"]))
+  (let [basis (b/create-basis {})]
+    ;;  (b/write-pom {:class-dir class-dir
+    ;;                :lib lib
+    ;;                :version version
+    ;;                :basis basis
+    ;;                :pom-data (pom-template version)
+    ;;                :src-dirs ["src"]})
+    
+    (assoc opts
+           :lib lib :version version
+           :jar-file (format "target/%s-%s.jar" lib version)
+           :scm {:tag (str "v" version)}
+           :basis basis
+           :class-dir class-dir
+           :pom-data (pom-template version)
+           :target "target"
+           :src-dirs ["src"])))
 
 (defn ci "Run the CI pipeline of tests (and build the JAR)." [opts]
   (test opts)
