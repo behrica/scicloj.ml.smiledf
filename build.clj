@@ -10,7 +10,7 @@
 (def class-dir "target/classes")
 
 (defn- pom-template [version]
-  [[:description "Librray to convert between Smile DataFrame and Tech ML Dataset"]
+  [[:description "Library to convert between Smile DataFrame and Tech ML Dataset"]
    [:url "https://github.com/behrica/scicloj.ml.smiledf"]
    [:licenses
     [:license

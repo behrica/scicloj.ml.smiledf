@@ -5,7 +5,7 @@
 	"build": {
 		"dockerfile": "Dockerfile",
 		"args": {
-			"BASE_IMAGE": "temurin-21-tools-deps-jammy",
+			"BASE_IMAGE": "temurin-21-tools-deps-1.12.2.1565-jammy",
 			"USERNAME": "${localEnv:USER:vscode}"
 		}
 	},
