@@ -142,7 +142,7 @@
    ))
 
 
-(defn col-as-value-vector [col]
+(defn- col-as-value-vector [col]
 
   (reify ValueVector
     (get [this ^int i]
@@ -166,8 +166,7 @@
     (getChar [this i] (get col i))
     (getByte [this i] (get col i))
     (stream [this] (col->stream col))
-    (intStream [this] (do
-                        (java.util.stream.IntStream/of (dt/->int-array col))))
+    (intStream [this]  (java.util.stream.IntStream/of (dt/->int-array col)))
     (isNullable [this] (not (empty? (col/missing col))))
     (isNullAt [this i] (col/is-missing? col i))
     (getNullCount [this] (count (vec (col/missing col))))
@@ -179,7 +178,7 @@
     ))
 
 (defn df-to-ds 
-  "Converts a Smile DataFrame to a Tech Dataset. "
+  "Converts a Smile DataFrame to a Tech Dataset." 
   [smile-df]
   (ds/new-dataset
    (map

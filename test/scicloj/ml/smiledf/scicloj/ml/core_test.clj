@@ -60,6 +60,7 @@
                  ]))))
 
 
+
 (deftest test-validate-round-trip
 
   (validate-round-trip
@@ -108,6 +109,7 @@
                   "a1" [true nil true]
                   "b" ["x" nil "z"]
                   "c" [1 2 3]
+                  "c2" [(int 1) (int 2) (int 3)]
                   "d" [1.0 nil 2.0]
                   "e" [0.1 0.2 0.3]
                   "f" [nil 0.2 nil]
@@ -150,12 +152,11 @@
 (deftest numeric-df
   (let [df
         (smile.data.DataFrame.
-         (into-array ValueVector [(smiledf/col-as-value-vector (col/new-column "long" [1 2 3]))
-                                  (smiledf/col-as-value-vector (col/new-column "int" (int-array [1 2 3])))
-                                  (smiledf/col-as-value-vector (col/new-column "double" [10.1 20.8 30.4]))
-                                  (smiledf/col-as-value-vector (col/new-column "float" (float-array [1.0 2.0 3.0])))
-                                  (smiledf/col-as-value-vector (col/new-column "short" (short-array [1 2 3])))]))]
-    (def df df)
+         (into-array ValueVector [(#'smiledf/col-as-value-vector (col/new-column "long" [1 2 3]))
+                                  (#'smiledf/col-as-value-vector (col/new-column "int" (int-array [1 2 3])))
+                                  (#'smiledf/col-as-value-vector (col/new-column "double" [10.1 20.8 30.4]))
+                                  (#'smiledf/col-as-value-vector (col/new-column "float" (float-array [1.0 2.0 3.0])))
+                                  (#'smiledf/col-as-value-vector (col/new-column "short" (short-array [1 2 3])))]))]
     (is (= ["long" "int" "double" "float" "short"] (vec (.names df))))
     (is (= 1.0 (.getFloat df 0 0)))
     (is (= (float 10.1) (.getFloat df 0 2)))
@@ -182,11 +183,11 @@
 (deftest string-df
   (let [df
         (smile.data.DataFrame.
-         (into-array ValueVector [(smiledf/col-as-value-vector (col/new-column "boolean" (boolean-array [true false true])))
-                                  (smiledf/col-as-value-vector (col/new-column "char" [\1 \2 \3]))
-                                  (smiledf/col-as-value-vector (col/new-column "byte" [1 2 3]))
-                                  (smiledf/col-as-value-vector (col/new-column "string" ["x" "y" "z"]))
-                                  (smiledf/col-as-value-vector (col/new-column "mixed" ["x" 1 true]))]))]
+         (into-array ValueVector [(#'smiledf/col-as-value-vector (col/new-column "boolean" (boolean-array [true false true])))
+                                  (#'smiledf/col-as-value-vector (col/new-column "char" [\1 \2 \3]))
+                                  (#'smiledf/col-as-value-vector (col/new-column "byte" [1 2 3]))
+                                  (#'smiledf/col-as-value-vector (col/new-column "string" ["x" "y" "z"]))
+                                  (#'smiledf/col-as-value-vector (col/new-column "mixed" ["x" 1 true]))]))]
 
     (is (= "true" (.getString df 0 0)))
     (is (= "1" (.getString df 0 1)))
@@ -200,7 +201,7 @@
 (deftest df-with-nulls
   (let [df
         (smile.data.DataFrame.
-         (into-array ValueVector [(smiledf/col-as-value-vector (col/new-column
+         (into-array ValueVector [(#'smiledf/col-as-value-vector (col/new-column
                                                                   "boolean"
                                                                   (boolean-array [true false true])
                                                                   {}
@@ -214,7 +215,7 @@
     (is (= [false false true] (stream-seq! (.. df (column "boolean") stream))))))
 
 (deftest set-value
-  (let [col (smiledf/col-as-value-vector (col/new-column [1 2 3]))]
+  (let [col (#'smiledf/col-as-value-vector (col/new-column [1 2 3]))]
     (-> col (.update 0 5))
     (is (= [5 2 3] (stream-seq! (.. col intStream))))))
 
