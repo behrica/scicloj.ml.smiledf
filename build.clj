@@ -5,8 +5,6 @@
 
 (def lib 'org.scicloj/scicloj.ml.smiledf	)
 (def version "0.0.1")
-#_ ; alternatively, use MAJOR.MINOR.COMMITS:
-(def version (format "1.0.%s" (b/git-count-revs nil)))
 (def class-dir "target/classes")
 
 (defn- pom-template [version]
@@ -35,12 +33,6 @@
 
 (defn- jar-opts [opts]
   (let [basis (b/create-basis {})]
-    ;;  (b/write-pom {:class-dir class-dir
-    ;;                :lib lib
-    ;;                :version version
-    ;;                :basis basis
-    ;;                :pom-data (pom-template version)
-    ;;                :src-dirs ["src"]})
     
     (assoc opts
            :lib lib :version version
