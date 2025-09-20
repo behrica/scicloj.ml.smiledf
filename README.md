@@ -1,3 +1,5 @@
+[![Clojars Project](https://img.shields.io/clojars/v/org.scicloj/scicloj.ml.smiledf.svg)](https://clojars.org/org.scicloj/scicloj.ml.smiledf)
+
 # scicloj.ml.smiledf
 
 
