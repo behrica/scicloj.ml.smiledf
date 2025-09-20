@@ -4,6 +4,7 @@
 
 
 A library to convert between [Smile dataframes](https://haifengl.github.io/) and [tech.ml datasets](https://github.com/techascent/tech.ml.dataset)
+Tested and known to work for smile version >= 4.0.0
 
 
 # Licence
